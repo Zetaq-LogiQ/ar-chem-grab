@@ -1,4 +1,4 @@
-# Pink Flask Lab: grab version
+# Pink Flask Lab: fingertip touch version
 
 A 3-step chemistry experiment you do with your hand in front of the phone camera. No mat needed.
 
@@ -10,9 +10,9 @@ A 3-step chemistry experiment you do with your hand in front of the phone camera
 
 **How to use**
 - The pointer sits on your index fingertip.
-- Put it on the glowing bottle and **close your fingers** (pinch or fist) to grab it.
-- Keep them closed and bring the bottle to the glowing flask; it pours by itself.
-- Once grabbed, the bottle stays in your hand until it has poured (opening your fingers does not drop it).
+- **Touch** the glowing bottle with your fingertip and hold it there a moment: you pick it up (no closing of the fingers).
+- The bottle follows your fingertip: bring it to the glowing flask and it pours by itself.
+- Once picked, the bottle stays with your fingertip until it has poured.
 - **+ / −** on the right change the size.
 - **Put it in my room:** on Android with ARCore, it stands on your real table. On iPhone, you get the camera view.
-- Finger on screen or mouse: pressing = fingers closed.
+- Finger on screen or mouse: touch the bottle the same way.

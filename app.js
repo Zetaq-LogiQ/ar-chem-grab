@@ -2,9 +2,9 @@
 //   1. dilute sodium hydroxide (a base) into the flask       -> colourless
 //   2. three drops of phenolphthalein (an indicator)         -> pink (phenolphthalein is pink in a base)
 //   3. dilute hydrochloric acid (an acid) into the flask      -> the pink goes (the base is neutralised)
-// The pointer sits on your index fingertip. Move it onto the glowing bottle and close your fingers (pinch or fist) to grab it.
-// Once grabbed, the bottle stays in your hand (opening the fingers does not drop it): bring it to the glowing flask and it
-// pours by itself. A finger on the screen or the mouse works the same: press = close. Size: the +/- buttons.
+// The pointer sits on your index fingertip. Touch the glowing bottle with it (hold it there a moment) and you pick it up;
+// no closing of the fingers. The bottle then stays with your fingertip: bring it to the glowing flask and it pours by itself.
+// A finger on the screen or the mouse works the same. Size: the +/- buttons.
 import * as THREE from 'three';
 import { createGestures } from './gesture.js';
 
@@ -67,7 +67,7 @@ function drawFlask() {
 
 // ---------------------------------------------------------------- the steps
 const STEPS = [
-  { src: 'base', give: 50, t: 'Take the dilute sodium hydroxide.', t2: 'Now bring it to the glowing flask.', why: 'Point at it with your finger, then close your fingers to pick it up. Sodium hydroxide is a base: it looks just like water.',
+  { src: 'base', give: 50, t: 'Take the dilute sodium hydroxide.', t2: 'Now bring it to the glowing flask.', why: 'Touch it with your fingertip and hold for a moment to pick it up. Sodium hydroxide is a base: it looks just like water.',
     after: 'A clear, colourless liquid. You cannot tell it is a base just by looking.' },
   { src: 'ind', give: 3, t: 'Take the phenolphthalein bottle.', t2: 'Bring it to the flask to add a few drops.', why: 'Phenolphthalein is an indicator: its colour tells us if a liquid is a base.',
     after: 'It turned pink! Phenolphthalein is pink in a base.' },
@@ -382,24 +382,23 @@ function frame(now, xf) {
   // where the hand is
   if (handOn) {
     if (mode === 'ar') { if (xrPic) GS.step(now, xrPic); } else GS.step(now);
-    if (G.lm) { const L = G.lm, W = G.wl, gap = W ? Math.hypot(W[4].x - W[8].x, W[4].y - W[8].y, W[4].z - W[8].z) * 100 : 8;
-      const c = clamp((7 - gap) / 5, 0, 1), tip = { x: lerp(L[8].x, (L[4].x + L[8].x) / 2, c), y: lerp(L[8].y, (L[4].y + L[8].y) / 2, c) }, p = mapVideo(tip);
+    if (G.lm) { const L = G.lm;
+      const p = mapVideo(L[8]);   // the index fingertip
       ptr.x = ptr.on && ptr.src === 'hand' ? lerp(ptr.x, p.x, .55) : p.x; ptr.y = ptr.on && ptr.src === 'hand' ? lerp(ptr.y, p.y, .55) : p.y; ptr.on = true; ptr.src = 'hand'; }
     else if (ptr.src === 'hand') ptr.on = false;
     $('hstat').textContent = !G.ready ? G.msg : G.lm ? '' : 'Show your hand to the camera';
   }
   const hx = ptr.x, hy = ptr.y, s = STEPS[Math.min(k, 2)], src = I[s.src];
 
-  // fingers closed? camera hand: pinch or fist; finger / mouse: pressed
-  const closed = ptr.on && (ptr.src === 'hand' ? G.gesture === 'pinch' || G.gesture === 'fist' : ptr.down);
-  if (ptr.on && !closed) needOpen = false;
+  // touch to pick: the fingertip (camera hand, finger on the screen or the mouse) resting on the glowing piece
   let over = false;
   if (mode === 'ar' && !placed) { /* first the lab has to stand on the table */ }
   else if (k < 3 && phase === 'pick') {
     const sp = toScreen(src.obj.localToWorld(V(0, src.grip, 0))), d = ptr.on ? Math.hypot(hx - sp.x, hy - sp.y) : 1e9;
-    over = d < R(); dwell = over && closed && !needOpen ? dwell + dt : 0;
+    over = d < R(); if (!over) needOpen = false;   // after a pour, move off the next bottle once before it can be picked
+    dwell = over && !needOpen ? dwell + dt : 0;
     setGlow(src, 'gold'); ring.position.x = src.home.x; ring.position.z = src.home.z;
-    if (dwell > .12) { phase = 'held'; held = src; dwell = 0; heldT = 0; openT = 0; sfx('pick'); card(); }
+    if (dwell > .35) { phase = 'held'; held = src; dwell = 0; heldT = 0; openT = 0; sfx('pick'); card(); }
   } else if (phase === 'held') {
     if (ptr.on) heldPose(held, hx, hy, dt);
     setGlow(held, 'green'); setGlow(I.flask, 'gold'); ring.position.x = I.flask.home.x; ring.position.z = I.flask.home.z;
@@ -457,9 +456,9 @@ function frame(now, xf) {
   const pulse = .55 + .45 * Math.sin(T * 5), near = over ? 1 : phase === 'held' ? clamp(dwell / .3, 0, 1) : 0;
   GM.gold.opacity = Math.max(pulse, near); GM.gold.color.set(near > .05 ? '#ffe680' : '#ffc93a');
   ring.visible = phase === 'pick' || phase === 'held'; ring.material.opacity = .35 + .45 * pulse; ring.scale.setScalar(1 + .08 * pulse + .15 * near);
-  // the pointer on your fingertip: gold over a piece you can grab, green while you hold one, small when your fingers are closed
+  // the pointer on your fingertip: gold over a piece you can pick (its ring fills while you hold still), green while you hold one
   const hm = $('hand'); hm.classList.toggle('on', ptr.on && (ptr.src === 'hand' || ptr.src === 'mouse'));
-  hm.classList.toggle('over', over); hm.classList.toggle('held', phase === 'held' || phase === 'pour'); hm.classList.toggle('closed', closed);
+  hm.classList.toggle('over', over); hm.classList.toggle('held', phase === 'held' || phase === 'pour'); hm.querySelector('.ring').style.strokeDasharray = over && phase === 'pick' ? `${(clamp(dwell / .35, 0, 1) * 100.5).toFixed(1)} 200` : '';
   hm.style.transform = `translate(${hx}px, ${hy}px)`;
   const act = phase === 'fallen' ? null : (phase === 'held' || phase === 'pour') && held ? I.flask : k < 3 ? src : null;
   panFrame(dt, act && (phase === 'pick' ? act.home : held ? { x: (held.obj.position.x + I.flask.home.x) / 2, z: (held.obj.position.z + I.flask.home.z) / 2 } : act.home));
