@@ -3,9 +3,8 @@
 //   2. three drops of phenolphthalein (an indicator)         -> pink (phenolphthalein is pink in a base)
 //   3. dilute hydrochloric acid (an acid) into the flask      -> the pink goes (the base is neutralised)
 // The pointer sits on your index fingertip. Move it onto the glowing bottle and close your fingers (pinch or fist) to grab it.
-// Keep them closed and bring the bottle to the glowing flask: it pours by itself. Open your hand before the pour is over and
-// you drop the bottle: the experiment is cancelled (Restart to try again). A finger on the screen or the mouse works the same:
-// press = close, lift = open. The size is fixed (no zoom).
+// Once grabbed, the bottle stays in your hand (opening the fingers does not drop it): bring it to the glowing flask and it
+// pours by itself. A finger on the screen or the mouse works the same: press = close. Size: the +/- buttons.
 import * as THREE from 'three';
 import { createGestures } from './gesture.js';
 
@@ -82,7 +81,7 @@ function card() {
   if (phase === 'fallen') { tt = 'Experiment cancelled'; why = 'You opened your hand before the pouring was done, so the bottle fell. Tap <b>Restart</b> and keep your fingers closed until it has poured.'; }
   else if (k >= 3) { tt = 'Well done! You did a neutralisation.'; why = STEPS[2].after; eq = 'sodium hydroxide + hydrochloric acid → sodium chloride + water'; }
   else if (phase === 'pick') { tt = s.t; why = k ? STEPS[k - 1].after + ' ' + s.why : s.why; }
-  else if (phase === 'held') { tt = s.t2; why = 'Keep your fingers closed. If you open them, you drop it.'; }
+  else if (phase === 'held') { tt = s.t2; why = 'Now move it to the glowing flask. It pours by itself.'; }
   else { tt = phase === 'pour' ? (s.src === 'ind' ? 'Adding drops…' : 'Pouring…') : s.after; why = phase === 'pour' ? '' : ''; }
   $('card').innerHTML = `<div class="st"><span>Step ${Math.min(k + 1, 3)} of 3</span><span class="dots">${dots}</span></div><div class="tt">${tt}</div><div class="why">${why}</div><div class="eq">${eq}</div>`;
 }
@@ -367,8 +366,6 @@ function frame(now, xf) {
   // fingers closed? camera hand: pinch or fist; finger / mouse: pressed
   const closed = ptr.on && (ptr.src === 'hand' ? G.gesture === 'pinch' || G.gesture === 'fist' : ptr.down);
   if (ptr.on && !closed) needOpen = false;
-  // holding: an open hand (for a moment, so one bad camera frame does not count) or a hand that left the picture = dropped
-  if (phase === 'held' || phase === 'pour') { openT = closed ? 0 : openT + dt; if (openT > (ptr.on ? .25 : .9)) cancel(); }
   let over = false;
   if (mode === 'ar' && !placed) { /* first the lab has to stand on the table */ }
   else if (k < 3 && phase === 'pick') {
