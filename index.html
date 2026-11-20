@@ -41,6 +41,10 @@
   #touch { position: fixed; inset: 0; touch-action: none; pointer-events: auto; }
   #hint { position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); background: var(--chip); padding: 11px 15px; border-radius: 14px; text-align: center; max-width: calc(100vw - 56px); }
   #hint b { color: var(--gold); }
+  #tags { position: fixed; inset: 0; pointer-events: none; }
+  .tag { position: absolute; left: 0; top: 0; max-width: 150px; padding: 4px 9px; border-radius: 10px; background: rgba(20, 22, 28, .62); color: #fff; font-size: 12.5px; font-weight: 600; line-height: 1.2; text-align: center; white-space: normal; }
+  .tag.now { background: rgba(255, 201, 58, .92); color: #241a00; }
+  .tag.edge { opacity: .75; font-style: italic; } .tag.hide { display: none; }
   #zoom { position: fixed; right: 12px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; }
   #zoom button { width: 48px; height: 48px; padding: 0; font-size: 24px; justify-content: center; }
   .hide { display: none !important; }
@@ -54,6 +58,7 @@
   <div id="card"></div>
   <div id="hint" class="hide"></div>
   <div id="zoom"><button id="bZin" aria-label="Bigger">+</button><button id="bZout" aria-label="Smaller">−</button></div>
+  <div id="tags"></div>
   <svg id="hand" viewBox="0 0 48 48"><circle class="ring" cx="24" cy="24" r="16"/><circle class="dot" cx="24" cy="24" r="5"/></svg>
   <div id="toast"></div>
   <div id="hstat"></div>
@@ -70,6 +75,6 @@
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }</script>
 <script src="./eb_shim.js"></script>
 <script src="./lab_glassware.js"></script>
-<script type="module" src="./app.js?v=3"></script>
+<script type="module" src="./app.js?v=5"></script>
 </body>
 </html>

@@ -135,11 +135,20 @@ function resize() {
   const half = 1.45, tanH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
   const dist = Math.max(half / tanH * 1.02, 3.6) / zf, el = THREE.MathUtils.degToRad(w < h ? 48 : 40);
   const tgt = V(0, .35, w < h ? .05 : .1);
-  camera.position.set(0, tgt.y + Math.sin(el) * dist, tgt.z + Math.cos(el) * dist); camera.lookAt(tgt);
+  camBase.set(0, tgt.y + Math.sin(el) * dist, tgt.z + Math.cos(el) * dist); camLook.copy(tgt);
   // portrait: push the bench down a little so the card on top does not cover the bottles
-  if (w < h) { camera.position.y += .35; camera.lookAt(tgt.x, tgt.y + .3, tgt.z); }
+  if (w < h) { camBase.y += .35; camLook.y += .3; }
+  camera.position.copy(camBase).add(camPan); camera.lookAt(camLook.clone().add(camPan));
 }
-addEventListener('resize', resize); resize();
+// zoomed in, the view slides toward the piece you work with now, so it stays on screen
+const camBase = V(0, 0, 0), camLook = V(0, 0, 0), camPan = V(0, 0, 0), panTo = V(0, 0, 0);
+function panFrame(dt, it) {
+  if (mode !== 'screen') return;
+  const f = clamp((zf - 1) / .8, 0, 1); panTo.set(it ? it.x * f * .85 : 0, 0, it ? it.z * f * .6 : 0);
+  camPan.lerp(panTo, 1 - Math.exp(-dt * 3));
+  camera.position.copy(camBase).add(camPan); camera.lookAt(camLook.clone().add(camPan));
+}
+addEventListener('resize', () => resize()); setTimeout(resize);
 
 // ---------------------------------------------------------------- the "hand" point on screen: camera hand, mouse or finger
 const ptr = { x: 0, y: 0, on: false, down: false, src: 'none' };
@@ -303,6 +312,24 @@ function stopLook() {
 // ---------------------------------------------------------------- screen helpers
 const tmp = V(0, 0, 0);
 const cam = () => mode === 'ar' ? renderer.xr.getCamera() : camera;
+// name tags: plain screen text above each piece, always kept inside the screen (the bottle labels are too small to read
+// and get cut off when you zoom in)
+const TAGS = {}, tagBox = $('tags');
+function tagFrame(act) {
+  const W = innerWidth, H = innerHeight, top = ($('card').getBoundingClientRect().bottom || 0) + 6, bot = H - 120;
+  for (const id of ['base', 'ind', 'acid', 'flask']) {
+    const it = I[id]; if (!it) continue;
+    let el = TAGS[id]; if (!el) { el = TAGS[id] = document.createElement('div'); el.className = 'tag'; el.textContent = id === 'flask' ? 'Conical flask' : it.name; tagBox.appendChild(el); }
+    const show = lab.visible && !(mode === 'ar' && !placed) && !(held === it && (phase === 'pour' || phase === 'back'));
+    el.classList.toggle('hide', !show); if (!show) continue;
+    const top3 = (it.obj.userData.lab && it.obj.userData.lab.mouth) ? it.obj.userData.lab.mouth[1] : 1;
+    const p = toScreen(it.obj.localToWorld(V(0, top3 + .12, 0))), bw = el.offsetWidth, bh = el.offsetHeight;
+    const off = tmp.z > 1 || p.x < -bw / 2 || p.x > W + bw / 2 || p.y < top - 30 || p.y > bot + 60;
+    if (off && it !== act) { el.classList.add('hide'); continue; }   // off screen: no tag, except the piece you need now
+    el.classList.toggle('edge', off); el.classList.toggle('now', it === act);
+    el.style.transform = `translate(${clamp(p.x - bw / 2, 6, W - bw - 62)}px, ${clamp(p.y - bh, top, bot - bh)}px)`;
+  }
+}
 function toScreen(p) { tmp.copy(p).project(cam()); return { x: (tmp.x + 1) / 2 * innerWidth, y: (1 - tmp.y) / 2 * innerHeight }; }
 const ray = new THREE.Raycaster(), plane = new THREE.Plane(V(0, 1, 0), 0);
 function toBench(x, y, h) {   // screen point -> a point at height h above the bench (in lab space)
@@ -434,6 +461,9 @@ function frame(now, xf) {
   const hm = $('hand'); hm.classList.toggle('on', ptr.on && (ptr.src === 'hand' || ptr.src === 'mouse'));
   hm.classList.toggle('over', over); hm.classList.toggle('held', phase === 'held' || phase === 'pour'); hm.classList.toggle('closed', closed);
   hm.style.transform = `translate(${hx}px, ${hy}px)`;
+  const act = phase === 'fallen' ? null : (phase === 'held' || phase === 'pour') && held ? I.flask : k < 3 ? src : null;
+  panFrame(dt, act && (phase === 'pick' ? act.home : held ? { x: (held.obj.position.x + I.flask.home.x) / 2, z: (held.obj.position.z + I.flask.home.z) / 2 } : act.home));
+  tagFrame(act);
   renderer.render(scene, camera);
 }
 
